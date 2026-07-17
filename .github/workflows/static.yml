@@ -1,46 +1,45 @@
-# Simple workflow for deploying static content to GitHub Pages
-name: Deploy static content to Pages
+name: 部署博客
+# 关键权限配置，必须放在最顶部
 permissions:
   contents: write
   pages: write
   id-token: write
+
+# 触发条件：main分支推送代码时运行
 on:
-  # Runs on pushes targeting the default branch
   push:
-    branches: ["main"]
-
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
-
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
-# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
+    branches: [ main ]
+  workflow_dispatch: # 支持手动点按钮运行
 
 jobs:
-  # Single deploy job since we're just deploying
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      # 1. 拉取仓库代码
+      - name: Checkout code
         uses: actions/checkout@v4
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-      - name: Upload artifact
+
+      # 2. 配置Node环境
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      # 3. 安装依赖
+      - name: Install dependencies
+        run: npm install
+
+      # 4. 打包生成静态页面
+      - name: Build site
+        run: npm run build
+
+      # 5. 上传打包后的静态文件（替换path为你的打包输出文件夹，dist/public/.vitepress/dist）
+      - name: Upload static artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Upload entire repository
-          path: '.'
+          path: dist
+
+      # 6. 官方部署Pages，不会出现gh-pages推送403报错
       - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v5
+        uses: actions/deploy-pages@v4
